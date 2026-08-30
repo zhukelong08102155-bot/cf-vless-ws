@@ -1,0 +1,22 @@
+# 真实配置，含 account_id / UUID / WS_PATH，绝不入库
+wrangler.toml
+!.wrangler.toml.example
+
+# wrangler 产物
+.wrangler/
+dist/
+
+# 依赖
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# 本地日志与临时文件
+*.log
+*.tmp
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/

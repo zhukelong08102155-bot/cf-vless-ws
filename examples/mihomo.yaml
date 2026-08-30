@@ -1,0 +1,93 @@
+# mihomo / Clash.Meta 客户端配置示例
+#
+# 特点：普通本地代理，不开 TUN，不需要管理员权限。
+# 因此不会和系统里其他接管路由表的网络工具（如 Cloudflare WARP）抢路由。
+#
+# 使用前把下面三处替换成你自己的值：
+#   YOUR_DOMAIN      -> 你的 Worker 域名，如 cf-vless-ws.xxx.workers.dev 或自定义域
+#   YOUR_UUID        -> wrangler.toml 里的 UUID
+#   YOUR_WS_PATH     -> wrangler.toml 里的 WS_PATH
+
+mixed-port: 7897
+allow-lan: false
+mode: rule
+log-level: info
+
+# 如果你的出口没有可用的 IPv6，务必关掉。
+# 否则客户端可能解析到 AAAA 记录后去连 IPv6 字面量，而服务端侧又不通，
+# 表现为"看起来配置没错但连不上"的假阴性。
+ipv6: false
+
+dns:
+  enable: true
+  ipv6: false
+
+  # 不开 TUN 就不要用 fake-ip。
+  # 另一个理由：fake-ip 会给下面的载体域名分配假 IP，导致流量绕回自己成环。
+  enhanced-mode: normal
+
+  # 关键点：不要填你本地运营商的 DNS。
+  # 部分地区对境外域名的 UDP 53 应答是被污染的（实测同一域名两次查询会返回
+  # 两个不同的、和目标毫无关系的地址）。填公共 DNS；若 UDP 53 也被干扰，
+  # 改用 DoH：
+  #   nameserver:
+  #     - https://1.1.1.1/dns-query
+  #     - https://8.8.8.8/dns-query
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+
+proxies:
+  - name: "cf-egress"
+    type: vless
+    server: YOUR_DOMAIN
+    port: 443
+    uuid: YOUR_UUID
+    udp: false
+    tls: true
+    servername: YOUR_DOMAIN
+    network: ws
+    ws-opts:
+      path: "YOUR_WS_PATH"
+      headers:
+        Host: YOUR_DOMAIN      # 自定义域场景下这一行必须有，漏了会 404/400
+
+proxy-groups:
+  - name: "TUNNEL"
+    type: select
+    proxies:
+      - "cf-egress"
+  - name: "DIRECT-OUT"
+    type: select
+    proxies:
+      - "DIRECT"
+
+rules:
+  # 1) 载体域名必须直连，且放在最前面。
+  #    否则隧道流量会自己绕回自己 —— 表现为 Cloudflare 返回 400 Bad Request。
+  - DOMAIN-SUFFIX,YOUR_DOMAIN,DIRECT-OUT
+
+  # 2) 需要走隧道的目标。按你自己的需求增删。
+  - DOMAIN-SUFFIX,googleapis.com,TUNNEL
+  - DOMAIN-SUFFIX,google.com,TUNNEL
+  - DOMAIN-SUFFIX,googleusercontent.com,TUNNEL
+  - DOMAIN-SUFFIX,gstatic.com,TUNNEL
+  - DOMAIN-SUFFIX,anthropic.com,TUNNEL
+  - DOMAIN-SUFFIX,openai.com,TUNNEL
+
+  # 3) 国内站点直连。
+  #    注意：这里用 GEOSITE（按域名）而不是 GEOIP（按 IP）。
+  #    如果你以后改成 fake-ip 模式，连接目标是 198.18.x 假 IP，
+  #    GEOIP 规则会匹配到假 IP 而失效 —— 那种情况下必须用域名类规则。
+  #    需要 geosite.dat：
+  #      https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+  - GEOSITE,cn,DIRECT-OUT
+
+  # 4) 兜底。
+  #    本配置没有 TUN，隧道是唯一出口，所以 MATCH 走隧道。
+  #    如果你同时开着其他能出网的工具，这里可以改成 DIRECT-OUT，
+  #    让隧道只承担上面第 2 组的目标，省下免费额度。
+  - MATCH,TUNNEL
