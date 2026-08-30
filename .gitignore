@@ -2,6 +2,11 @@
 wrangler.toml
 !.wrangler.toml.example
 
+# 推送前的密钥扫描模式文件。里面是真实值，绝不入库。
+# （模板 secrets-scan-patterns.txt.example 是入库的，那个是安全的占位符。）
+secrets-scan-patterns.txt
+!secrets-scan-patterns.txt.example
+
 # wrangler 产物
 .wrangler/
 dist/
