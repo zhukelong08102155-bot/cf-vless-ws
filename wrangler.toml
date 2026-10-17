@@ -1,12 +1,12 @@
 # 复制为 wrangler.toml 后填入你自己的值。
 # 不要把填好真实值的 wrangler.toml 提交到公开仓库。
 
-name = "cf-vless-ws"
+name = "aged-math-vless-test"
 main = "src/index.js"
 compatibility_date = "2026-08-30"
 
 # wrangler whoami 可以查到。也可以整行删掉，用 wrangler 交互式选择账号。
-account_id = "YOUR_ACCOUNT_ID"
+
 
 # nodejs_compat 是 cloudflare:sockets 的 connect() 所必需的
 compatibility_flags = ["nodejs_compat"]
@@ -17,11 +17,11 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # 客户端凭证。用 uuidgen 或 python -c "import uuid;print(uuid.uuid4())" 生成。
-UUID = "2a8141db-b67f-4443-b739-ce4f17067aa5"
+
 
 # 隧道路径。随机长字符串，别用默认值。
 # 路径校验在代码里是前置的：非此路径一律 404，等于对外隐身。
-WS_PATH = "/nWyGScxCqvK864TYEN"
+
 
 # ---------- 可选：挂自定义域名 ----------
 # 强烈建议挂。workers.dev 域名有时会被干扰，自定义域更稳。
